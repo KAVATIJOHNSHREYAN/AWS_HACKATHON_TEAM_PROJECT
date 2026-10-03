@@ -1,4 +1,4 @@
-/* Enterprise AWS Glassmorphism + Bootstrap Theme Token Definitions */
+/* Enterprise AWS Glassmorphism + Bootstrap Theme Tokens */
 :root {
   --bg-gradient-dark: linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%);
   --bg-card: rgba(30, 41, 59, 0.75);
@@ -13,16 +13,6 @@
   --aws-squid: #232f3e;
   --aws-blue: #0073bb;
   --aws-cyan: #00a4e4;
-  --aws-purple: #8b5cf6;
-
-  --status-requested: #3b82f6;
-  --status-assigned: #8b5cf6;
-  --status-accepted: #06b6d4;
-  --status-travelling: #f59e0b;
-  --status-arrived: #ec4899;
-  --status-working: #eab308;
-  --status-completed: #10b981;
-  --status-rejected: #ef4444;
 
   --sidebar-width: 270px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -36,7 +26,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Glassmorphism Panel Class */
+/* Glassmorphism Panel */
 .glass-panel {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
@@ -51,7 +41,22 @@ body {
   border-color: var(--border-glass-glow);
 }
 
-/* Sidebar Styling */
+/* Separate Login Containers */
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 36px;
+}
+
+/* Sidebar & Navigation */
 .sidebar {
   width: var(--sidebar-width);
   background: rgba(15, 23, 42, 0.95);
@@ -63,13 +68,6 @@ body {
   height: 100vh;
   z-index: 100;
 }
-
-.brand-title {
-  font-size: 1.2rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-.brand-title span { color: var(--aws-orange); }
 
 .nav-menu {
   display: flex;
@@ -137,18 +135,6 @@ body {
   color: #fff;
 }
 
-/* Form Controls */
-.form-control, .form-select {
-  background: rgba(15, 23, 42, 0.8) !important;
-  border: 1px solid var(--border-glass) !important;
-  color: var(--text-main) !important;
-  border-radius: 10px !important;
-}
-.form-control:focus, .form-select:focus {
-  border-color: var(--aws-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 153, 0, 0.2) !important;
-}
-
 /* Chat Assistant Panel */
 .chat-box {
   height: 380px;
@@ -176,7 +162,6 @@ body {
   border: 1px solid rgba(139, 92, 246, 0.4);
 }
 
-/* Page visibility */
 .page-view {
   display: none;
   animation: fadeIn 0.3s ease-in-out;

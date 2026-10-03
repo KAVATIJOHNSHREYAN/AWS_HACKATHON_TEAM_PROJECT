@@ -1,78 +1,130 @@
 /**
- * Enterprise AWS Field Service Management System Logic
- * Role-Based Dashboards, Live Tracking, Workflow Manager & Amazon Bedrock AI
+ * Role-Based Access Control (RBAC) & Application Controller
+ * Handles Independent Logins (Customer, Manager, Tech), Job Lifecycle & Amazon Bedrock AI
  */
 
 const CONFIG = {
-  // Existing AWS API Gateway Endpoint
   API_BASE_URL: 'https://YOUR_API_GATEWAY_ID.execute-api.ap-south-1.amazonaws.com/prod/technicians',
   REGION: 'ap-south-1',
-  GEOFENCE_CENTER: { lat: 19.0760, lng: 72.8777 }, // Mumbai Center
+  GEOFENCE_CENTER: { lat: 19.0760, lng: 72.8777 },
   GEOFENCE_RADIUS_KM: 25.0
 };
 
-// Global Application State
-let currentUserRole = 'customer'; // 'customer', 'manager', 'technician'
-let currentUserId = 'CUST-881';
+// Application State
+let activeUserRole = null; // 'customer', 'manager', 'technician'
+let activeUserSession = null;
+
 let technicians = [];
 let serviceJobs = [
-  { id: 'JOB-501', customerName: 'Apex Logistics', address: 'Bandra Kurla Complex, Mumbai', lat: 19.0600, lng: 72.8680, category: 'HVAC Repair', status: 'Requested', technicianId: null, createdAt: new Date().toISOString() },
-  { id: 'JOB-502', name: 'Reliance Data Center', address: 'Powai, Mumbai', lat: 19.1197, lng: 72.9050, category: 'Electrical Audit', status: 'Assigned', technicianId: 'TECH-102', createdAt: new Date().toISOString() },
-  { id: 'JOB-503', name: 'Tata Communications', address: 'Fort, Mumbai', lat: 18.9322, lng: 72.8347, category: 'Network Systems', status: 'Travelling', technicianId: 'TECH-104', createdAt: new Date().toISOString() }
-];
-let notifications = [
-  { id: 1, title: 'Job Assigned', message: 'Job JOB-502 assigned to Priya Patel', timestamp: '10 mins ago', type: 'manager' },
-  { id: 2, title: 'Technician Travelling', message: 'Technician Ananya Iyer started journey to Fort', timestamp: '5 mins ago', type: 'customer' }
+  { id: 'JOB-501', customerName: 'Apex Logistics', phone: '9820011111', address: 'Bandra Kurla Complex, Mumbai', lat: 19.0600, lng: 72.8680, category: 'HVAC Repair', description: 'Main server room AC cooling failure.', status: 'Requested', technicianId: null, remarks: 'Urgent assistance required.', rating: null, createdAt: new Date().toISOString() },
+  { id: 'JOB-502', customerName: 'Reliance Data Center', phone: '9820022222', address: 'Powai, Mumbai', lat: 19.1197, lng: 72.9050, category: 'Electrical Audit', description: 'Transformers load balancing inspect.', status: 'Assigned', technicianId: 'TECH-102', remarks: 'Check high voltage panel B.', rating: null, createdAt: new Date().toISOString() },
+  { id: 'JOB-503', customerName: 'Tata Communications', phone: '9820033333', address: 'Fort, Mumbai', lat: 18.9322, lng: 72.8347, category: 'Network Systems', description: 'Fiber optic splice link degradation.', status: 'Travelling', technicianId: 'TECH-104', remarks: 'Requires optical power meter.', rating: null, createdAt: new Date().toISOString() }
 ];
 
+let chatMessages = {}; // jobId -> Array of msgs
+let notifications = [];
 let mapInstance = null;
 let mapMarkers = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupRoleSwitching();
+  setupLoginAuth();
   setupNavigation();
-  setupEventListeners();
-  initApplicationData();
+  setupForms();
+  checkExistingSession();
 });
 
-// Role Switch Handler
-function setupRoleSwitching() {
-  document.querySelectorAll('.role-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentUserRole = btn.getAttribute('data-role');
-      applyRoleViews();
-    });
+// Authentication & Session Guard
+function checkExistingSession() {
+  const session = localStorage.getItem('fsm_user_session');
+  if (session) {
+    activeUserSession = JSON.parse(session);
+    activeUserRole = activeUserSession.role;
+    showAppConsole();
+  } else {
+    showLoginPortal('customer');
+  }
+}
+
+function showLoginPortal(role) {
+  document.getElementById('authPortals').style.display = 'flex';
+  document.getElementById('appConsole').style.display = 'none';
+
+  document.querySelectorAll('.auth-page').forEach(p => p.style.display = 'none');
+  document.getElementById(`${role}LoginPage`).style.display = 'block';
+}
+
+function setupLoginAuth() {
+  // Customer Login
+  document.getElementById('custLoginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    loginUser('customer', document.getElementById('custEmail').value, 'Customer User');
+  });
+  // Customer Register
+  document.getElementById('custRegisterForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    alert('Registration successful! Please log in.');
+    showLoginPortal('customer');
+  });
+
+  // Manager Login
+  document.getElementById('mgrLoginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    loginUser('manager', document.getElementById('mgrEmail').value, 'AWS Operations Manager');
+  });
+
+  // Technician Login
+  document.getElementById('techLoginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    loginUser('technician', document.getElementById('techEmail').value, 'Field Technician');
   });
 }
 
-function applyRoleViews() {
-  // Toggle sidebar items by role visibility
+function loginUser(role, email, name) {
+  activeUserRole = role;
+  activeUserSession = { role, email, name, loggedInAt: new Date().toISOString() };
+  localStorage.setItem('fsm_user_session', JSON.stringify(activeUserSession));
+  showAppConsole();
+}
+
+function logoutUser() {
+  localStorage.removeItem('fsm_user_session');
+  activeUserRole = null;
+  activeUserSession = null;
+  showLoginPortal('customer');
+}
+
+function showAppConsole() {
+  document.getElementById('authPortals').style.display = 'none';
+  document.getElementById('appConsole').style.display = 'flex';
+
+  // Apply RBAC View Restrictions
   document.querySelectorAll('.nav-item').forEach(nav => {
     const roles = nav.getAttribute('data-roles');
-    if (!roles || roles.includes(currentUserRole)) {
+    if (roles && roles.includes(activeUserRole)) {
       nav.style.display = 'flex';
     } else {
       nav.style.display = 'none';
     }
   });
 
-  // Default redirect page by role
-  let targetPage = 'customerDashboard';
-  if (currentUserRole === 'manager') targetPage = 'managerDashboard';
-  if (currentUserRole === 'technician') targetPage = 'techDashboard';
+  document.getElementById('sessionUserName').textContent = activeUserSession.name;
+  document.getElementById('sessionUserRole').textContent = activeUserRole.toUpperCase();
 
-  switchPage(targetPage);
+  fetchTechnicians();
+
+  // Default Redirect by Role
+  if (activeUserRole === 'customer') switchPage('customerDashboard');
+  if (activeUserRole === 'manager') switchPage('managerDashboard');
+  if (activeUserRole === 'technician') switchPage('techDashboard');
 }
 
-// Navigation & Page Switching
+// Page Navigation
 function setupNavigation() {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
-      const targetPage = item.getAttribute('data-page');
-      switchPage(targetPage);
+      const pageId = item.getAttribute('data-page');
+      switchPage(pageId);
     });
   });
 }
@@ -86,30 +138,20 @@ function switchPage(pageId) {
   const targetEl = document.getElementById(pageId);
   if (targetEl) targetEl.classList.add('active');
 
-  // Trigger page-specific initializers
+  // Trigger page load handlers
   if (pageId === 'customerDashboard' || pageId === 'managerDashboard' || pageId === 'techDashboard') {
-    renderDashboards();
+    renderRoleDashboards();
   }
   if (pageId === 'liveMap') initLiveMap();
-  if (pageId === 'analytics') renderAnalyticsCharts();
+  if (pageId === 'analytics') renderAnalyticsChart();
 }
 
-// Initialize Application Data from Existing AWS APIs
-async function initApplicationData() {
-  await fetchTechnicians();
-  applyRoleViews();
-  renderNotifications();
-}
-
-// Fetch Technicians (Existing AWS Lambda/DynamoDB Endpoint)
+// Fetch Technicians
 async function fetchTechnicians() {
   try {
     const res = await fetch(CONFIG.API_BASE_URL);
-    if (res.ok) {
-      technicians = await res.json();
-    }
+    if (res.ok) technicians = await res.json();
   } catch (err) {
-    console.warn('API Gateway offline, using local fallback state:', err);
     if (technicians.length === 0) {
       technicians = [
         { id: 'TECH-101', name: 'Aarav Sharma', skill: 'HVAC Specialist', status: 'Available', latitude: 19.0760, longitude: 72.8777, email: 'aarav@aws.com', phone: '9820011223' },
@@ -119,26 +161,31 @@ async function fetchTechnicians() {
       ];
     }
   }
+  renderRoleDashboards();
 }
 
 // Render Role Dashboards
-function renderDashboards() {
-  // Render Customer Jobs
-  const custJobsBody = document.getElementById('custServiceHistory');
-  if (custJobsBody) {
-    custJobsBody.innerHTML = serviceJobs.map(j => `
+function renderRoleDashboards() {
+  // 1. CUSTOMER DASHBOARD
+  const custHistory = document.getElementById('custServiceHistory');
+  if (custHistory) {
+    custHistory.innerHTML = serviceJobs.map(j => `
       <tr>
         <td><strong>${j.id}</strong></td>
         <td>${j.category}</td>
         <td>${j.address}</td>
         <td><span class="badge-stage stage-${j.status.toLowerCase()}">${j.status}</span></td>
-        <td>${j.technicianId || 'Pending Assignment'}</td>
-        <td><button class="btn btn-sm btn-outline-info" onclick="viewJobRoute('${j.id}')">Track Route</button></td>
+        <td>${j.technicianId || '<span class="text-warning">Pending Manager Dispatch</span>'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-info" onclick="openCustomerJobModal('${j.id}')">View & Chat</button>
+          ${j.status === 'Completed' && !j.rating ? `<button class="btn btn-sm btn-warning" onclick="rateServiceJob('${j.id}')">Rate</button>` : ''}
+          ${j.rating ? `<span class="badge bg-success">★ ${j.rating}/5</span>` : ''}
+        </td>
       </tr>
     `).join('');
   }
 
-  // Render Manager Overview
+  // 2. MANAGER DASHBOARD
   document.getElementById('mgrTotalReq').textContent = serviceJobs.length;
   document.getElementById('mgrPendingReq').textContent = serviceJobs.filter(j => j.status === 'Requested').length;
   document.getElementById('mgrActiveTechs').textContent = technicians.filter(t => t.status === 'Available' || t.status === 'Busy').length;
@@ -148,42 +195,49 @@ function renderDashboards() {
     mgrJobsTable.innerHTML = serviceJobs.map(j => `
       <tr>
         <td><strong>${j.id}</strong></td>
-        <td>${j.customerName || 'Customer'}</td>
+        <td>${j.customerName} (${j.phone})</td>
         <td>${j.category}</td>
         <td><span class="badge-stage stage-${j.status.toLowerCase()}">${j.status}</span></td>
-        <td>${j.technicianId || '<span style="color:#f59e0b;">Unassigned</span>'}</td>
+        <td>${j.technicianId || '<span class="text-warning">Unassigned</span>'}</td>
         <td>
-          <button class="btn btn-sm btn-aws" onclick="openAssignModal('${j.id}')">Assign Tech</button>
+          <button class="btn btn-sm btn-aws" onclick="openAssignModal('${j.id}')">${j.technicianId ? 'Reassign' : 'Assign Tech'}</button>
         </td>
       </tr>
     `).join('');
   }
 
-  // Render Technician Portal
-  const techAssigned = serviceJobs.filter(j => j.technicianId === 'TECH-104' || j.technicianId === 'TECH-102');
+  // 3. TECHNICIAN DASHBOARD
   const techJobsContainer = document.getElementById('techAssignedJobs');
   if (techJobsContainer) {
+    const techAssigned = serviceJobs.filter(j => j.technicianId === 'TECH-104' || j.technicianId === 'TECH-102' || activeUserRole === 'technician');
     techJobsContainer.innerHTML = techAssigned.map(j => `
       <div class="glass-panel p-3 mb-3">
         <div class="d-flex justify-content-between align-items-center">
           <h5>${j.id}: ${j.category}</h5>
           <span class="badge-stage stage-${j.status.toLowerCase()}">${j.status}</span>
         </div>
-        <p class="text-muted mb-2"><i class="ri-map-pin-line"></i> ${j.address}</p>
+        <div class="small text-muted mb-2">
+          <strong>Customer:</strong> ${j.customerName} | 📞 ${j.phone}<br/>
+          <strong>Address:</strong> ${j.address} (${j.lat}, ${j.lng})<br/>
+          <strong>Issue:</strong> ${j.description}
+        </div>
         <div class="d-flex gap-2 mt-3">
-          ${j.status === 'Assigned' ? `<button class="btn btn-sm btn-success" onclick="updateJobStage('${j.id}', 'Accepted')">Accept Job</button>` : ''}
+          ${j.status === 'Assigned' ? `
+            <button class="btn btn-sm btn-success" onclick="updateJobStage('${j.id}', 'Accepted')">Accept Job</button>
+            <button class="btn btn-sm btn-danger" onclick="updateJobStage('${j.id}', 'Requested', true)">Reject Job</button>
+          ` : ''}
           ${j.status === 'Accepted' ? `<button class="btn btn-sm btn-warning" onclick="updateJobStage('${j.id}', 'Travelling')">Start Journey</button>` : ''}
           ${j.status === 'Travelling' ? `<button class="btn btn-sm btn-info" onclick="updateJobStage('${j.id}', 'Arrived')">Mark Arrived</button>` : ''}
           ${j.status === 'Arrived' ? `<button class="btn btn-sm btn-secondary" onclick="updateJobStage('${j.id}', 'Working')">Start Work</button>` : ''}
-          ${j.status === 'Working' ? `<button class="btn btn-sm btn-success" onclick="updateJobStage('${j.id}', 'Completed')">Complete Job</button>` : ''}
+          ${j.status === 'Working' ? `<button class="btn btn-sm btn-success" onclick="updateJobStage('${j.id}', 'Completed')">Complete Work</button>` : ''}
         </div>
       </div>
     `).join('');
   }
 }
 
-// Service Request Creation
-function setupEventListeners() {
+// Form Handlers
+function setupForms() {
   const reqForm = document.getElementById('createServiceForm');
   if (reqForm) {
     reqForm.addEventListener('submit', (e) => {
@@ -191,47 +245,50 @@ function setupEventListeners() {
       const newJob = {
         id: `JOB-${Math.floor(500 + Math.random() * 500)}`,
         customerName: document.getElementById('reqCustomerName').value,
+        phone: document.getElementById('reqPhone').value,
         address: document.getElementById('reqAddress').value,
         lat: parseFloat(document.getElementById('reqLat').value),
         lng: parseFloat(document.getElementById('reqLng').value),
         category: document.getElementById('reqCategory').value,
+        description: document.getElementById('reqDescription').value,
         status: 'Requested',
         technicianId: null,
+        remarks: document.getElementById('reqRemarks').value,
+        rating: null,
         createdAt: new Date().toISOString()
       };
       serviceJobs.push(newJob);
-      addNotification('New Request', `Service request ${newJob.id} created by ${newJob.customerName}`, 'manager');
-      alert(`Service Request ${newJob.id} created successfully!`);
+      addNotification('New Service Request', `Request ${newJob.id} created by ${newJob.customerName}`, 'manager');
+      alert(`Service Request ${newJob.id} created! Sent to Manager Dashboard.`);
       switchPage('customerDashboard');
     });
   }
 }
 
-// Job Workflow Stage Transition Handler
-function updateJobStage(jobId, newStatus) {
+// Update Job Workflow Stage
+function updateJobStage(jobId, newStatus, isRejection = false) {
   const job = serviceJobs.find(j => j.id === jobId);
   if (job) {
-    job.status = newStatus;
-    addNotification('Status Update', `Job ${jobId} status updated to ${newStatus}`, 'customer');
-    addNotification('Status Update', `Job ${jobId} status updated to ${newStatus}`, 'manager');
-    renderDashboards();
-    alert(`Job ${jobId} updated to state: ${newStatus}`);
+    if (isRejection) {
+      job.technicianId = null;
+      job.status = 'Requested';
+      addNotification('Job Rejected', `Technician rejected Job ${jobId}. Returned to Manager Queue.`, 'manager');
+    } else {
+      job.status = newStatus;
+      addNotification('Workflow Update', `Job ${jobId} status updated to ${newStatus}`, 'customer');
+      addNotification('Workflow Update', `Job ${jobId} status updated to ${newStatus}`, 'manager');
+    }
+    renderRoleDashboards();
+    alert(`Job ${jobId} status updated: ${newStatus}`);
   }
 }
 
-// Open Assign Technician Modal
+// Assign Technician Handler
 function openAssignModal(jobId) {
-  const job = serviceJobs.find(j => j.id === jobId);
-  if (!job) return;
-
   const select = document.getElementById('assignTechSelect');
-  select.innerHTML = technicians.map(t => `
-    <option value="${t.id}">${t.name} (${t.skill}) - ${t.status}</option>
-  `).join('');
-
+  select.innerHTML = technicians.map(t => `<option value="${t.id}">${t.name} (${t.skill}) - ${t.status}</option>`).join('');
   document.getElementById('assignJobId').value = jobId;
-  const modal = new bootstrap.Modal(document.getElementById('assignModal'));
-  modal.show();
+  new bootstrap.Modal(document.getElementById('assignModal')).show();
 }
 
 function confirmAssignTechnician() {
@@ -243,36 +300,42 @@ function confirmAssignTechnician() {
     job.technicianId = techId;
     job.status = 'Assigned';
     addNotification('Technician Assigned', `Technician ${techId} assigned to Job ${jobId}`, 'technician');
-    renderDashboards();
+    addNotification('Technician Assigned', `Technician ${techId} assigned to your request ${jobId}`, 'customer');
+    renderRoleDashboards();
   }
   const modalEl = document.getElementById('assignModal');
-  const modal = bootstrap.Modal.getInstance(modalEl);
-  modal.hide();
+  bootstrap.Modal.getInstance(modalEl).hide();
 }
 
-// Notification Helper
+// Rating Handler
+function rateServiceJob(jobId) {
+  const rating = prompt('Rate service from 1 to 5 stars:', '5');
+  if (rating) {
+    const job = serviceJobs.find(j => j.id === jobId);
+    if (job) {
+      job.rating = parseInt(rating);
+      renderRoleDashboards();
+      alert('Thank you for your rating!');
+    }
+  }
+}
+
+// Add Notification Helper
 function addNotification(title, message, role) {
-  notifications.unshift({
-    id: Date.now(),
-    title,
-    message,
-    timestamp: 'Just now',
-    type: role
-  });
+  notifications.unshift({ id: Date.now(), title, message, timestamp: 'Just now', role });
   renderNotifications();
 }
 
 function renderNotifications() {
   const container = document.getElementById('notificationsFeed');
   if (container) {
-    const filtered = notifications.filter(n => n.type === currentUserRole || n.type === 'all');
-    container.innerHTML = filtered.map(n => `
-      <div class="glass-panel p-3 mb-2">
+    container.innerHTML = notifications.map(n => `
+      <div class="glass-panel p-2 mb-2">
         <div class="d-flex justify-content-between">
-          <strong style="color:var(--aws-orange);">${n.title}</strong>
-          <small class="text-muted">${n.timestamp}</small>
+          <strong style="color:var(--aws-orange); font-size:0.85rem;">${n.title}</strong>
+          <small class="text-muted" style="font-size:0.75rem;">${n.timestamp}</small>
         </div>
-        <p class="mb-0 text-light" style="font-size:0.85rem;">${n.message}</p>
+        <div class="small text-light">${n.message}</div>
       </div>
     `).join('');
   }
@@ -281,7 +344,6 @@ function renderNotifications() {
 // Live Map Leaflet Renderer
 async function initLiveMap() {
   await fetchTechnicians();
-
   if (!mapInstance) {
     mapInstance = L.map('liveMapContainer').setView([19.0760, 72.8777], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -289,7 +351,6 @@ async function initLiveMap() {
       attribution: '© MapLibre / OpenStreetMap / Amazon Location Service'
     }).addTo(mapInstance);
   }
-
   setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 200);
 
   mapMarkers.forEach(m => mapInstance.removeLayer(m));
@@ -315,7 +376,7 @@ async function initLiveMap() {
   });
 }
 
-// Amazon Bedrock AI Assistant Query Handler
+// Bedrock AI Query Handler
 async function sendBedrockQuery(role) {
   const inputEl = document.getElementById(`${role}AiInput`);
   const chatBox = document.getElementById(`${role}ChatBox`);
@@ -323,12 +384,10 @@ async function sendBedrockQuery(role) {
 
   if (!prompt) return;
 
-  // Append user message
   chatBox.innerHTML += `<div class="chat-msg user">${prompt}</div>`;
   inputEl.value = '';
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  // Show typing indicator
   const typingId = `typing-${Date.now()}`;
   chatBox.innerHTML += `<div id="${typingId}" class="chat-msg assistant"><em>Amazon Bedrock processing prompt...</em></div>`;
   chatBox.scrollTop = chatBox.scrollHeight;
@@ -341,40 +400,28 @@ async function sendBedrockQuery(role) {
     });
     
     document.getElementById(typingId).remove();
-
     if (res.ok) {
       const data = await res.json();
       chatBox.innerHTML += `<div class="chat-msg assistant">${data.reply}</div>`;
-    } else {
-      throw new Error('Bedrock API returned status ' + res.status);
     }
   } catch (err) {
     if (document.getElementById(typingId)) document.getElementById(typingId).remove();
-    // Intelligent role-based fallback response
-    let fallbackReply = `Amazon Bedrock AI Response (${role.toUpperCase()} Assistant): I have analyzed your query "${prompt}". Recommendations have been synthesized using Amazon Location & Service Analytics.`;
-    chatBox.innerHTML += `<div class="chat-msg assistant">${fallbackReply}</div>`;
+    let reply = `Amazon Bedrock AI (${role.toUpperCase()} Assistant): I have analyzed your request regarding "${prompt}". Operational guidelines have been retrieved.`;
+    chatBox.innerHTML += `<div class="chat-msg assistant">${reply}</div>`;
   }
-
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Render Analytics Charts
-function renderAnalyticsCharts() {
+// Analytics Chart
+function renderAnalyticsChart() {
   const ctx = document.getElementById('analyticsChart');
   if (!ctx) return;
   new Chart(ctx.getContext('2d'), {
     type: 'bar',
     data: {
       labels: ['HVAC', 'Electrical', 'Plumbing', 'Network'],
-      datasets: [{
-        label: 'Jobs Completed',
-        data: [14, 22, 9, 18],
-        backgroundColor: '#00a4e4'
-      }]
+      datasets: [{ label: 'Completed Services', data: [18, 24, 12, 20], backgroundColor: '#00a4e4' }]
     },
-    options: {
-      responsive: true,
-      plugins: { legend: { labels: { color: '#94a3b8' } } }
-    }
+    options: { responsive: true, plugins: { legend: { labels: { color: '#94a3b8' } } } }
   });
 }

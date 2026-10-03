@@ -1,77 +1,83 @@
 # Amazon Location Service - Field Service Management System
 
-A production-style AWS Field Service Management application demonstrating real-time technician location tracking, geofence monitoring, dashboard analytics, and nearest technician dispatching using **Amazon Location Service**, **AWS Lambda (Python 3.13)**, **Amazon DynamoDB**, and **Amazon API Gateway**.
+A production-style enterprise Field Service Management platform featuring 3 independent role-based authentication portals (**Customer**, **Manager/Admin**, **Technician**), real-time device tracking via **Amazon Location Service Tracker**, automated job status workflow transitions, and intelligent **Amazon Bedrock AI Assistants**.
 
 ---
 
-## 🌟 Key Features
+## 🌟 Key Features & Role Portals
 
-1. **Real-Time Amazon Location Tracker Integration**:
-   - `POST` / `PUT` technician API requests automatically stream device coordinate updates to **Amazon Location Service Tracker**.
-2. **Interactive Live Map**:
-   - Visualizes technicians with status color codes:
-     - 🟢 **Green**: Available
-     - 🟠 **Orange**: Busy
-     - 🔴 **Red**: Offline
-3. **Geofence Monitoring & Region Alerts**:
-   - Automated detection and real-time dashboard banner warnings if a technician exits the designated service boundary.
-4. **Nearest Technician Search**:
-   - Calculates distance via Haversine algorithm & API query based on customer coordinates (`lat`, `lng`) to dispatch the nearest available technician.
-5. **Dashboard Analytics**:
-   - Status distribution charts, active job counts, and recent location activity feeds.
-6. **Glassmorphism Web UI**:
-   - Built with Vanilla HTML, CSS (Glassmorphism + AWS theme tokens), JavaScript, Leaflet, and Chart.js.
+### 1. 👤 Customer Portal (`Customer Login / Registration`)
+- **Service Creation**: Input service category, issue description, address, site GPS coordinates, remarks, and preferred visit time.
+- **Workflow Tracking**: Monitor status (`Requested` ➔ `Assigned` ➔ `Accepted` ➔ `Travelling` ➔ `Arrived` ➔ `Working` ➔ `Completed`).
+- **Live Location Tracking**: View assigned technician positions on **Amazon Location Map**.
+- **Bedrock AI Assistant**: Get instant service FAQs, complaint resolution, and booking guidance.
+- **Ratings & Reviews**: Submit star ratings upon job completion.
+
+### 2. 👨‍💼 Manager / Admin Portal (`Manager Console Login`)
+- **Master Request Queue**: Overview all customer service requests across Mumbai (`ap-south-1`).
+- **Smart Technician Dispatch**: Assign or reassign field technicians to pending requests.
+- **Live Location & Geofence Monitoring**: Monitor device coordinates and geofence region alerts.
+- **Bedrock AI Assistant**: Obtain dispatch optimization and pending job summaries.
+
+### 3. 🛠️ Technician Portal (`Field Technician Login`)
+- **Assigned Jobs Workspace**: Accept or reject new dispatches.
+- **Status Progression**: Transition jobs through `Travelling`, `Arrived`, `Working`, and `Completed`.
+- **Live GPS Streaming**: Stream device position updates directly to **Amazon Location Tracker**.
+- **Bedrock AI Assistant**: Query repair suggestions, safety guidelines, and troubleshooting steps.
+
+---
+
+## 📐 Flowcharts Documentation
+
+Detailed Mermaid flowcharts for all three roles can be found in [FLOWCHARTS.md](FLOWCHARTS.md):
+- Customer Request & Tracking Flowchart
+- Manager Review & Dispatch Flowchart
+- Technician Journey & Completion Flowchart
+- Integrated System Lifecycle Sequence Diagram
 
 ---
 
 ## 🏗️ Architecture & AWS Resources Reused
 
 ```
-┌─────────────────┐       ┌──────────────────────┐       ┌──────────────────┐
-│  Web Frontend   │ ────> │  Amazon API Gateway  │ ────> │    AWS Lambda    │
-│  Amplify / S3   │ <──── │      (HTTP API)      │ <──── │   (Python 3.13)  │
-└─────────────────┘       └──────────────────────┘       └────────┬─────────┘
-                                                                  │
-                                            ┌─────────────────────┴─────────────────────┐
-                                            ▼                                           ▼
-                                ┌───────────────────────┐                  ┌─────────────────────────┐
-                                │   Amazon DynamoDB     │                  │ Amazon Location Service │
-                                │ (Technicians Table)   │                  │ (Tracker & Map Service) │
-                                └───────────────────────┘                  └─────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                 Role-Based Web Portals                  │
+│       (Customer Login | Manager Login | Tech Login)     │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+                ┌──────────────────────────┐
+                │   Amazon API Gateway     │
+                └────────────┬─────────────┘
+                             │
+                             ▼
+                ┌──────────────────────────┐
+                │        AWS Lambda        │
+                │      (Python 3.13)       │
+                └──────┬────────────┬──────┘
+                       │            │
+         ┌─────────────┴──┐      ┌──┴─────────────────────────┐
+         ▼                ▼      ▼                            ▼
+┌──────────────────┐  ┌───────────────────────┐  ┌────────────────────────┐
+│ Amazon DynamoDB  │  │ Amazon Location Map   │  │ Amazon Bedrock Runtime │
+│ (Technicians)    │  │ & Device Tracker      │  │ (Claude 3 / Titan AI)  │
+└──────────────────┘  └───────────────────────┘  └────────────────────────┘
 ```
-
-- **Amazon API Gateway**: HTTP API routing CRUD operations and search queries.
-- **AWS Lambda**: Extended Python 3.13 backend handling DynamoDB persistence and Location Tracker updates.
-- **Amazon DynamoDB**: `Technicians` table storing technician state and coordinates.
-- **Amazon Location Service**: Map resources and Device Tracker.
 
 ---
 
-## 📁 Repository Structure
+## 📁 Repository File Structure
 
 ```text
 .
-├── index.html          # Frontend Single-Page Application
-├── style.css           # Glassmorphism & AWS Design System Stylesheet
-├── app.js              # Full-stack Client Controller, Map Rendering & Analytics
+├── index.html          # HTML Interface (3 Role Login Portals & Dashboards)
+├── style.css           # Glassmorphism + Bootstrap 5 + AWS Dark Blue Gradient Stylesheet
+├── app.js              # Full-Stack Controller (RBAC Session Guard, Map & Bedrock AI)
 ├── lambda_function.py  # Python 3.13 Lambda Backend Function
+├── FLOWCHARTS.md       # Mermaid Flowcharts for Customer, Manager, and Tech Roles
 ├── LICENSE             # MIT License
-└── README.md           # Project Documentation
+└── README.md           # Master Project Documentation
 ```
-
----
-
-## 🚀 Setup & Deployment
-
-1. **Lambda Function Update**:
-   - Deploy `lambda_function.py` to your existing AWS Lambda instance.
-   - Attach `geo:BatchUpdateDevicePosition` permission to the Lambda execution role.
-
-2. **Frontend Configuration**:
-   - Update `API_BASE_URL` in `app.js` with your API Gateway invoke endpoint.
-
-3. **Deploy Web Application**:
-   - Host `index.html`, `style.css`, and `app.js` on **AWS Amplify Hosting** or **Amazon S3 Static Website Hosting**.
 
 ---
 

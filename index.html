@@ -11,9 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
-  <!-- Bootstrap 5 CSS -->
+  <!-- Bootstrap 5 & Leaflet CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <!-- Master Stylesheet -->
@@ -21,68 +20,176 @@
 </head>
 <body>
 
-  <!-- APP CONTAINER -->
-  <div id="app" class="d-flex">
+  <!-- ========================================== -->
+  <!-- THREE INDEPENDENT ROLE LOGIN PORTALS      -->
+  <!-- ========================================== -->
+  <div id="authPortals" class="auth-wrapper">
 
-    <!-- SIDEBAR NAVIGATION -->
+    <!-- 1. CUSTOMER LOGIN & REGISTER PORTAL -->
+    <div id="customerLoginPage" class="auth-page w-100">
+      <div class="glass-panel auth-card mx-auto">
+        <div class="text-center mb-4">
+          <div style="background: linear-gradient(135deg, var(--aws-orange), #ff5500); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 1.3rem; margin: 0 auto 12px auto;">AWS</div>
+          <h3 class="fw-bold">Customer Portal</h3>
+          <p class="text-muted small">Sign in to request and track field services</p>
+        </div>
+
+        <form id="custLoginForm">
+          <div class="mb-3">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="custEmail" class="form-control" value="customer@apexlogistics.com" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" value="••••••••••••" required>
+          </div>
+          <div class="d-flex justify-content-between mb-3 small">
+            <a href="#" onclick="alert('Password reset link sent to your email!')" class="text-warning">Forgot Password?</a>
+            <a href="#" onclick="document.getElementById('customerLoginPage').style.display='none'; document.getElementById('customerRegisterPage').style.display='block';" class="text-info">Register Account</a>
+          </div>
+          <button type="submit" class="btn btn-aws w-100">Sign In as Customer</button>
+        </form>
+
+        <div class="text-center mt-4 pt-3 border-top border-secondary">
+          <span class="text-muted small me-2">Switch Portal:</span>
+          <button onclick="showLoginPortal('manager')" class="btn btn-sm btn-outline-info me-1">Manager Login</button>
+          <button onclick="showLoginPortal('technician')" class="btn btn-sm btn-outline-warning">Technician Login</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMER REGISTER PAGE -->
+    <div id="customerRegisterPage" class="auth-page w-100" style="display: none;">
+      <div class="glass-panel auth-card mx-auto">
+        <h3 class="fw-bold text-center mb-3">Customer Registration</h3>
+        <form id="custRegisterForm">
+          <div class="mb-2"><label class="form-label">Full Name / Org</label><input type="text" class="form-control" required placeholder="Apex Logistics"></div>
+          <div class="mb-2"><label class="form-label">Email</label><input type="email" class="form-control" required placeholder="contact@apex.com"></div>
+          <div class="mb-2"><label class="form-label">Phone</label><input type="text" class="form-control" required placeholder="9820011111"></div>
+          <div class="mb-3"><label class="form-label">Password</label><input type="password" class="form-control" required placeholder="••••••••"></div>
+          <button type="submit" class="btn btn-aws w-100">Create Customer Account</button>
+        </form>
+        <div class="text-center mt-3"><a href="#" onclick="showLoginPortal('customer')" class="text-muted small">Back to Login</a></div>
+      </div>
+    </div>
+
+    <!-- 2. MANAGER / ADMIN LOGIN PORTAL -->
+    <div id="managerLoginPage" class="auth-page w-100" style="display: none;">
+      <div class="glass-panel auth-card mx-auto" style="border-color: var(--aws-cyan);">
+        <div class="text-center mb-4">
+          <div style="background: linear-gradient(135deg, var(--aws-cyan), #0073bb); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 1.3rem; margin: 0 auto 12px auto;"><i class="ri-shield-user-line"></i></div>
+          <h3 class="fw-bold">Manager Console Login</h3>
+          <p class="text-muted small">Operations & Dispatch Control Center</p>
+        </div>
+
+        <form id="mgrLoginForm">
+          <div class="mb-3">
+            <label class="form-label">Manager IAM Email</label>
+            <input type="email" id="mgrEmail" class="form-control" value="admin@aws-location.com" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Master Password</label>
+            <input type="password" class="form-control" value="••••••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" style="background:var(--aws-cyan); border:none;">Access Manager Console</button>
+        </form>
+
+        <div class="text-center mt-4 pt-3 border-top border-secondary">
+          <span class="text-muted small me-2">Switch Portal:</span>
+          <button onclick="showLoginPortal('customer')" class="btn btn-sm btn-outline-light me-1">Customer Login</button>
+          <button onclick="showLoginPortal('technician')" class="btn btn-sm btn-outline-warning">Technician Login</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. TECHNICIAN LOGIN PORTAL -->
+    <div id="technicianLoginPage" class="auth-page w-100" style="display: none;">
+      <div class="glass-panel auth-card mx-auto" style="border-color: var(--aws-orange);">
+        <div class="text-center mb-4">
+          <div style="background: linear-gradient(135deg, #f59e0b, #d97706); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 1.3rem; margin: 0 auto 12px auto;"><i class="ri-tools-fill"></i></div>
+          <h3 class="fw-bold">Technician Field Workspace</h3>
+          <p class="text-muted small">Sign in to view assigned field jobs & routes</p>
+        </div>
+
+        <form id="techLoginForm">
+          <div class="mb-3">
+            <label class="form-label">Technician Badge / Email</label>
+            <input type="email" id="techEmail" class="form-control" value="tech.ananya@aws.com" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Passcode</label>
+            <input type="password" class="form-control" value="••••••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-warning w-100 fw-bold">Login as Field Tech</button>
+        </form>
+
+        <div class="text-center mt-4 pt-3 border-top border-secondary">
+          <span class="text-muted small me-2">Switch Portal:</span>
+          <button onclick="showLoginPortal('customer')" class="btn btn-sm btn-outline-light me-1">Customer Login</button>
+          <button onclick="showLoginPortal('manager')" class="btn btn-sm btn-outline-info">Manager Login</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MAIN APP CONSOLE LAYOUT (RBAC PROTECTED)   -->
+  <!-- ========================================== -->
+  <div id="appConsole" class="d-flex" style="display: none;">
+
+    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="brand d-flex align-items-center gap-2 mb-4">
         <div style="background: linear-gradient(135deg, var(--aws-orange), #ff5500); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff;">AWS</div>
-        <div class="brand-title">Location <span>FSM</span></div>
-      </div>
-
-      <!-- Role Selector Toggle -->
-      <div class="mb-3">
-        <label class="form-label text-muted small fw-bold text-uppercase" style="font-size: 0.65rem;">Active Workspace Role</label>
-        <div class="btn-group w-100" role="group">
-          <button type="button" class="btn btn-sm btn-outline-secondary role-btn active" data-role="customer">Customer</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary role-btn" data-role="manager">Manager</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary role-btn" data-role="technician">Tech</button>
+        <div>
+          <div class="brand-title">Location <span>FSM</span></div>
+          <div style="font-size:0.65rem; color:var(--aws-cyan); font-weight:700;" id="sessionUserRole">ROLE</div>
         </div>
       </div>
 
       <!-- Navigation Menu -->
       <nav class="nav-menu">
         <!-- Customer Nav -->
-        <a class="nav-item active" data-page="customerDashboard" data-roles="customer">
-          <i class="ri-user-heart-line"></i> <span>Customer Portal</span>
+        <a class="nav-item" data-page="customerDashboard" data-roles="customer">
+          <i class="ri-user-heart-line"></i> <span>Customer Dashboard</span>
         </a>
         <a class="nav-item" data-page="createService" data-roles="customer">
-          <i class="ri-add-circle-line"></i> <span>Create Request</span>
+          <i class="ri-add-circle-line"></i> <span>Create Service Request</span>
         </a>
 
         <!-- Manager Nav -->
         <a class="nav-item" data-page="managerDashboard" data-roles="manager">
-          <i class="ri-dashboard-3-line"></i> <span>Manager Console</span>
+          <i class="ri-dashboard-3-line"></i> <span>Manager Dashboard</span>
         </a>
         <a class="nav-item" data-page="technicianManagement" data-roles="manager">
-          <i class="ri-user-settings-line"></i> <span>Manage Techs</span>
+          <i class="ri-user-settings-line"></i> <span>Manage Technicians</span>
         </a>
 
         <!-- Technician Nav -->
         <a class="nav-item" data-page="techDashboard" data-roles="technician">
-          <i class="ri-tools-line"></i> <span>Tech Workspace</span>
+          <i class="ri-tools-line"></i> <span>Technician Workspace</span>
         </a>
 
         <!-- Shared Nav -->
         <a class="nav-item" data-page="liveMap" data-roles="customer,manager,technician">
-          <i class="ri-map-pin-user-line"></i> <span>Live Tracking</span>
+          <i class="ri-map-pin-user-line"></i> <span>Live Map Tracking</span>
         </a>
         <a class="nav-item" data-page="bedrockAi" data-roles="customer,manager,technician">
-          <i class="ri-sparkles-line"></i> <span>Bedrock AI</span>
+          <i class="ri-sparkles-line"></i> <span>Amazon Bedrock AI</span>
         </a>
         <a class="nav-item" data-page="analytics" data-roles="manager">
-          <i class="ri-bar-chart-box-line"></i> <span>Analytics</span>
+          <i class="ri-bar-chart-box-line"></i> <span>Reports & Analytics</span>
         </a>
       </nav>
 
       <div class="mt-auto pt-3 border-top border-secondary">
-        <div class="d-flex align-items-center gap-2">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--aws-blue); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;">AWS</div>
+        <div class="d-flex align-items-center justify-content-between">
           <div>
-            <div class="small fw-bold">Enterprise FSM</div>
+            <div class="small fw-bold text-truncate" style="max-width:140px;" id="sessionUserName">User Name</div>
             <div class="small text-muted">ap-south-1</div>
           </div>
+          <button onclick="logoutUser()" class="btn btn-sm btn-outline-danger" title="Sign Out"><i class="ri-logout-box-r-line"></i></button>
         </div>
       </div>
     </aside>
@@ -93,28 +200,28 @@
       <!-- TOP BAR -->
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 class="fw-bold mb-0">Amazon Location Field Service Platform</h2>
-          <p class="text-muted small mb-0">Real-time Location Tracking, Intelligent Workflow & Amazon Bedrock AI</p>
+          <h2 class="fw-bold mb-0">Amazon Location Service Field Management</h2>
+          <p class="text-muted small mb-0">Role-Based Access Control (RBAC) & Real-Time Dispatch Platform</p>
         </div>
       </div>
 
-      <!-- CUSTOMER DASHBOARD PAGE -->
-      <section id="customerDashboard" class="page-view active">
+      <!-- 1. CUSTOMER DASHBOARD -->
+      <section id="customerDashboard" class="page-view">
         <div class="glass-panel p-4 mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0">My Service Requests</h4>
-            <button class="btn btn-aws" onclick="switchPage('createService')"><i class="ri-add-line"></i> New Request</button>
+            <button class="btn btn-aws" onclick="switchPage('createService')"><i class="ri-add-line"></i> Create New Request</button>
           </div>
           <div class="table-responsive">
             <table class="table table-dark table-hover align-middle">
               <thead>
                 <tr>
                   <th>Job ID</th>
-                  <th>Service Category</th>
-                  <th>Location Address</th>
-                  <th>Status Workflow</th>
-                  <th>Assigned Tech</th>
-                  <th>Action</th>
+                  <th>Category</th>
+                  <th>Site Address</th>
+                  <th>Status</th>
+                  <th>Assigned Technician</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="custServiceHistory"></tbody>
@@ -123,14 +230,20 @@
         </div>
       </section>
 
-      <!-- CREATE SERVICE REQUEST PAGE -->
+      <!-- CREATE SERVICE REQUEST -->
       <section id="createService" class="page-view">
-        <div class="glass-panel p-4 style="max-width: 650px; margin: 0 auto;"">
-          <h4 class="mb-3"><i class="ri-tools-fill text-warning"></i> Create New Service Request</h4>
+        <div class="glass-panel p-4" style="max-width: 680px; margin: 0 auto;">
+          <h4 class="mb-3"><i class="ri-tools-fill text-warning"></i> Create Service Request</h4>
           <form id="createServiceForm">
-            <div class="mb-3">
-              <label class="form-label">Customer / Organization Name</label>
-              <input type="text" id="reqCustomerName" class="form-control" required placeholder="e.g. Apex Logistics">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label class="form-label">Customer Name</label>
+                <input type="text" id="reqCustomerName" class="form-control" required value="Apex Logistics">
+              </div>
+              <div class="col-6 mb-3">
+                <label class="form-label">Contact Phone</label>
+                <input type="text" id="reqPhone" class="form-control" required value="9820011111">
+              </div>
             </div>
             <div class="mb-3">
               <label class="form-label">Service Category</label>
@@ -142,8 +255,12 @@
               </select>
             </div>
             <div class="mb-3">
+              <label class="form-label">Issue Description</label>
+              <textarea id="reqDescription" class="form-control" rows="2" required placeholder="Describe issue details..."></textarea>
+            </div>
+            <div class="mb-3">
               <label class="form-label">Site Address</label>
-              <input type="text" id="reqAddress" class="form-control" required placeholder="Bandra Kurla Complex, Mumbai">
+              <input type="text" id="reqAddress" class="form-control" required value="Bandra Kurla Complex, Mumbai">
             </div>
             <div class="row">
               <div class="col-6 mb-3">
@@ -155,12 +272,16 @@
                 <input type="number" step="any" id="reqLng" class="form-control" value="72.8680" required>
               </div>
             </div>
-            <button type="submit" class="btn btn-aws w-100 mt-2">Submit Service Request</button>
+            <div class="mb-3">
+              <label class="form-label">Special Remarks</label>
+              <input type="text" id="reqRemarks" class="form-control" placeholder="Optional notes...">
+            </div>
+            <button type="submit" class="btn btn-aws w-100 mt-2">Submit Request to Manager</button>
           </form>
         </div>
       </section>
 
-      <!-- MANAGER DASHBOARD PAGE -->
+      <!-- 2. MANAGER DASHBOARD -->
       <section id="managerDashboard" class="page-view">
         <div class="row g-3 mb-4">
           <div class="col-md-4">
@@ -171,7 +292,7 @@
           </div>
           <div class="col-md-4">
             <div class="glass-panel p-3">
-              <div class="text-muted small">PENDING ASSIGNMENT</div>
+              <div class="text-muted small">PENDING ASSIGNMENTS</div>
               <h2 id="mgrPendingReq" class="fw-bold text-warning mt-2">0</h2>
             </div>
           </div>
@@ -184,7 +305,7 @@
         </div>
 
         <div class="glass-panel p-4">
-          <h4 class="mb-3">Master Service Request Queue</h4>
+          <h4 class="mb-3">Master Customer Service Request Queue</h4>
           <div class="table-responsive">
             <table class="table table-dark table-hover align-middle">
               <thead>
@@ -194,7 +315,7 @@
                   <th>Category</th>
                   <th>Workflow Status</th>
                   <th>Assigned Tech</th>
-                  <th>Dispatch</th>
+                  <th>Dispatch Action</th>
                 </tr>
               </thead>
               <tbody id="mgrJobsTableBody"></tbody>
@@ -203,15 +324,15 @@
         </div>
       </section>
 
-      <!-- TECHNICIAN DASHBOARD PAGE -->
+      <!-- 3. TECHNICIAN DASHBOARD -->
       <section id="techDashboard" class="page-view">
         <div class="glass-panel p-4 mb-4">
-          <h4 class="mb-3"><i class="ri-user-star-line text-warning"></i> Assigned Service Jobs Workspace</h4>
+          <h4 class="mb-3"><i class="ri-user-star-line text-warning"></i> Technician Assigned Jobs</h4>
           <div id="techAssignedJobs"></div>
         </div>
       </section>
 
-      <!-- LIVE TRACKING PAGE -->
+      <!-- LIVE MAP TRACKING -->
       <section id="liveMap" class="page-view">
         <div class="glass-panel p-3">
           <div class="d-flex justify-content-between align-items-center mb-3">
@@ -228,38 +349,32 @@
         </div>
       </section>
 
-      <!-- AMAZON BEDROCK AI ASSISTANT PAGE -->
+      <!-- AMAZON BEDROCK AI -->
       <section id="bedrockAi" class="page-view">
         <div class="row g-3">
-          <!-- Customer Assistant -->
           <div class="col-md-4">
             <div class="glass-panel p-3">
               <h5 class="text-info"><i class="ri-sparkles-line"></i> Customer AI Assistant</h5>
-              <p class="text-muted small">Service FAQs, Booking & Complaints</p>
               <div id="customerChatBox" class="chat-box glass-panel mb-3"></div>
               <div class="input-group">
-                <input type="text" id="customerAiInput" class="form-control" placeholder="Ask AI assistant...">
+                <input type="text" id="customerAiInput" class="form-control" placeholder="Ask service FAQ...">
                 <button class="btn btn-aws" onclick="sendBedrockQuery('customer')">Send</button>
               </div>
             </div>
           </div>
-          <!-- Tech Assistant -->
           <div class="col-md-4">
             <div class="glass-panel p-3">
               <h5 class="text-warning"><i class="ri-tools-line"></i> Technician AI Assistant</h5>
-              <p class="text-muted small">Repair Suggestions & Troubleshooting</p>
               <div id="technicianChatBox" class="chat-box glass-panel mb-3"></div>
               <div class="input-group">
-                <input type="text" id="technicianAiInput" class="form-control" placeholder="Ask technical guidance...">
+                <input type="text" id="technicianAiInput" class="form-control" placeholder="Ask repair guidance...">
                 <button class="btn btn-aws" onclick="sendBedrockQuery('technician')">Send</button>
               </div>
             </div>
           </div>
-          <!-- Manager Assistant -->
           <div class="col-md-4">
             <div class="glass-panel p-3">
-              <h5 class="text-purple" style="color:#c084fc;"><i class="ri-cpu-line"></i> Manager AI Assistant</h5>
-              <p class="text-muted small">Tech Recommendations & Dispatch</p>
+              <h5 style="color:#c084fc;"><i class="ri-cpu-line"></i> Manager AI Assistant</h5>
               <div id="managerChatBox" class="chat-box glass-panel mb-3"></div>
               <div class="input-group">
                 <input type="text" id="managerAiInput" class="form-control" placeholder="Ask dispatch optimization...">
@@ -270,15 +385,15 @@
         </div>
       </section>
 
-      <!-- ANALYTICS PAGE -->
+      <!-- ANALYTICS -->
       <section id="analytics" class="page-view">
         <div class="glass-panel p-4">
-          <h4 class="mb-3">Field Service Performance Analytics</h4>
+          <h4 class="mb-3">Reports & Service Analytics</h4>
           <canvas id="analyticsChart" style="max-height: 380px;"></canvas>
         </div>
       </section>
 
-      <!-- NOTIFICATIONS FEED CONTAINER -->
+      <!-- NOTIFICATIONS -->
       <div class="mt-4">
         <h5 class="text-muted mb-2">Live System Notifications</h5>
         <div id="notificationsFeed"></div>
@@ -292,13 +407,13 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content glass-panel text-light" style="background:#0f172a; border-color:var(--border-glass);">
         <div class="modal-header">
-          <h5 class="modal-title">Assign Technician</h5>
+          <h5 class="modal-title">Assign / Reassign Technician</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="assignJobId">
           <div class="mb-3">
-            <label class="form-label">Select Technician</label>
+            <label class="form-label">Select Field Technician</label>
             <select id="assignTechSelect" class="form-select"></select>
           </div>
         </div>
