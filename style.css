@@ -118,6 +118,73 @@ body {
 .stage-working { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); }
 .stage-completed { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
 
+/* Radar Pulse Rings for Map Pins */
+.radar-pin {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+}
+.radar-pin::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: radarPulse 2s infinite ease-out;
+  opacity: 0;
+}
+@keyframes radarPulse {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Visual Progress Stepper Bar */
+.workflow-stepper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  margin: 16px 0;
+  padding: 0 8px;
+}
+.workflow-stepper::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  z-index: 1;
+}
+.step-item {
+  position: relative;
+  z-index: 2;
+  background: #0f172a;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-glass);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.step-item.active {
+  background: var(--aws-orange);
+  color: #fff;
+  border-color: var(--aws-orange);
+  box-shadow: 0 0 12px rgba(255, 153, 0, 0.6);
+}
+.step-item.completed {
+  background: var(--aws-blue);
+  color: #fff;
+  border-color: var(--aws-blue);
+}
+
 /* Buttons */
 .btn-aws {
   background: linear-gradient(135deg, var(--aws-orange), #e68a00);

@@ -222,10 +222,14 @@ function renderRoleDashboards() {
     const techAssigned = serviceJobs.filter(j => j.technicianId === 'TECH-104' || j.technicianId === 'TECH-102' || activeUserRole === 'technician');
     techJobsContainer.innerHTML = techAssigned.map(j => `
       <div class="glass-panel p-3 mb-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5>${j.id}: ${j.category}</h5>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="mb-0">${j.id}: ${j.category}</h5>
           <span class="badge-stage stage-${j.status.toLowerCase()}">${j.status}</span>
         </div>
+
+        <!-- Dynamic 7-Stage Visual Progress Stepper Bar -->
+        ${renderWorkflowStepper(j.status)}
+
         <div class="small text-muted mb-2">
           <strong>Customer:</strong> ${j.customerName} | 📞 ${j.phone}<br/>
           <strong>Address:</strong> ${j.address} (${j.lat}, ${j.lng})<br/>
@@ -244,6 +248,23 @@ function renderRoleDashboards() {
       </div>
     `).join('');
   }
+}
+
+// 7-Stage Visual Progress Stepper Bar Helper
+function renderWorkflowStepper(currentStatus) {
+  const stages = ['Requested', 'Assigned', 'Accepted', 'Travelling', 'Arrived', 'Working', 'Completed'];
+  const currentIndex = stages.indexOf(currentStatus);
+
+  return `
+    <div class="workflow-stepper">
+      ${stages.map((stage, i) => {
+        let cls = '';
+        if (i === currentIndex) cls = 'active';
+        else if (i < currentIndex) cls = 'completed';
+        return `<div class="step-item ${cls}">${i < currentIndex ? '✓ ' : ''}${stage}</div>`;
+      }).join('')}
+    </div>
+  `;
 }
 
 // Form Handlers
@@ -372,7 +393,7 @@ async function initLiveMap() {
     let color = t.status === 'Available' ? '#10b981' : (t.status === 'Busy' ? '#f59e0b' : '#ef4444');
     const customIcon = L.divIcon({
       className: 'custom-marker',
-      html: `<div id="marker-${t.id}" style="background-color: ${color}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 12px ${color}; transition: all 0.5s linear;"></div>`,
+      html: `<div id="marker-${t.id}" class="radar-pin" style="background-color: ${color}; color: ${color}; box-shadow: 0 0 14px ${color};"></div>`,
       iconSize: [24, 24]
     });
 
