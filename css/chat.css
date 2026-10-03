@@ -1,0 +1,80 @@
+/* Private Chat & Technician View Modal Styles */
+.tech-profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--gradient-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: var(--neon-glow-blue);
+}
+
+.chat-modal-window {
+  display: flex;
+  flex-direction: column;
+  height: 480px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-glass);
+}
+
+.chat-header-bar {
+  padding: 12px 18px;
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bubble {
+  max-width: 75%;
+  padding: 10px 16px;
+  border-radius: 16px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  position: relative;
+}
+
+.bubble.sent {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.bubble.received {
+  align-self: flex-start;
+  background: rgba(51, 65, 85, 0.8);
+  color: var(--color-text-main);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--border-glass);
+}
+
+.chat-time {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.chat-footer-bar {
+  padding: 12px;
+  background: rgba(30, 41, 59, 0.8);
+  border-top: 1px solid var(--border-glass);
+}

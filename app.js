@@ -185,11 +185,13 @@ function renderRoleDashboards() {
         <td>${j.category}</td>
         <td>${j.address}</td>
         <td><span class="badge-stage stage-${j.status.toLowerCase()}">${j.status}</span></td>
-        <td>${j.technicianId || '<span class="text-warning">Pending Manager Dispatch</span>'}</td>
+        <td>${j.technicianId || '<span class="text-warning">Pending Dispatch</span>'}</td>
         <td>
-          <button class="btn btn-sm btn-outline-info" onclick="openCustomerJobModal('${j.id}')">View & Chat</button>
-          ${j.status === 'Completed' && !j.rating ? `<button class="btn btn-sm btn-warning" onclick="rateServiceJob('${j.id}')">Rate</button>` : ''}
-          ${j.rating ? `<span class="badge bg-success">★ ${j.rating}/5</span>` : ''}
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-info" title="View Technician Details & Live Map" onclick="openViewTechModal('${j.id}')"><i class="ri-eye-line"></i> View</button>
+            <button class="btn btn-sm btn-outline-warning" title="Private Chat with Technician" ${!j.technicianId ? 'disabled' : ''} onclick="openPrivateChatModal('${j.id}')"><i class="ri-chat-3-line"></i> Chat</button>
+            <button class="btn btn-sm btn-outline-success" title="Call Technician Phone" ${!j.technicianId ? 'disabled' : ''} onclick="callTechnician('${j.id}')"><i class="ri-phone-line"></i> Call</button>
+          </div>
         </td>
       </tr>
     `).join('');
@@ -596,8 +598,122 @@ async function sendBedrockQuery(role) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Analytics Chart
-function renderAnalyticsChart() {
+// Open View Technician Details Modal with Amazon Location Map
+let modalMapInstance = null;
+
+function openViewTechModal(jobId) {
+  const job = serviceJobs.find(j => j.id === jobId);
+  if (!job) return;
+
+  const tech = technicians.find(t => t.id === job.technicianId) || {
+    id: 'TECH-104', name: 'Ananya Iyer', phone: '9820099001', email: 'ananya@aws.com', skill: 'Network Systems', status: 'Available', latitude: 19.0596, longitude: 72.8295
+  };
+
+  document.getElementById('vTechAvatar').textContent = tech.name.split(' ').map(n => n[0]).join('');
+  document.getElementById('vTechName').textContent = tech.name;
+  document.getElementById('vTechId').textContent = tech.id;
+  document.getElementById('vTechStatus').textContent = tech.status;
+  document.getElementById('vTechPhone').textContent = tech.phone;
+  document.getElementById('vTechEmail').textContent = tech.email;
+  document.getElementById('vTechSkill').textContent = tech.skill;
+
+  document.getElementById('vJobCategory').textContent = job.category;
+  document.getElementById('vJobDesc').textContent = job.description;
+  document.getElementById('vJobRemarks').textContent = job.remarks || 'Standard assignment';
+
+  document.getElementById('vTechChatBtn').onclick = () => {
+    bootstrap.Modal.getInstance(document.getElementById('viewTechModal')).hide();
+    openPrivateChatModal(jobId);
+  };
+
+  document.getElementById('vTechCallBtn').onclick = () => callTechnician(jobId);
+
+  new bootstrap.Modal(document.getElementById('viewTechModal')).show();
+
+  // Initialize Modal Amazon Location Map
+  setTimeout(() => {
+    if (!modalMapInstance) {
+      modalMapInstance = L.map('modalMapContainer').setView([job.lat, job.lng], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(modalMapInstance);
+    } else {
+      modalMapInstance.invalidateSize();
+      modalMapInstance.setView([job.lat, job.lng], 12);
+    }
+
+    L.marker([job.lat, job.lng]).addTo(modalMapInstance).bindPopup('Customer Location');
+    L.marker([tech.latitude, tech.longitude]).addTo(modalMapInstance).bindPopup(`Tech: ${tech.name}`);
+  }, 300);
+}
+
+// Call Technician Confirmation
+function callTechnician(jobId) {
+  const job = serviceJobs.find(j => j.id === jobId);
+  const tech = technicians.find(t => t.id === job?.technicianId) || { name: 'Field Tech', phone: '9820099001' };
+
+  if (confirm(`Initiate call to ${tech.name} at +91-${tech.phone}?`)) {
+    window.location.href = `tel:+91${tech.phone}`;
+  }
+}
+
+// Private 1-to-1 Chat Engine
+let currentChatJobId = null;
+
+function openPrivateChatModal(jobId) {
+  currentChatJobId = jobId;
+  const job = serviceJobs.find(j => j.id === jobId);
+  const tech = technicians.find(t => t.id === job?.technicianId) || { name: 'Assigned Tech', role: 'Technician' };
+
+  document.getElementById('chatPartnerName').textContent = `Private Chat: ${tech.name}`;
+  document.getElementById('chatPartnerRole').textContent = `Job ${jobId} • Encrypted Customer-Tech Channel`;
+
+  renderPrivateChatMessages();
+  new bootstrap.Modal(document.getElementById('privateChatModal')).show();
+}
+
+function renderPrivateChatMessages() {
+  const chatContainer = document.getElementById('privateChatMessages');
+  if (!chatContainer || !currentChatJobId) return;
+
+  if (!chatMessages[currentChatJobId]) {
+    chatMessages[currentChatJobId] = [
+      { sender: 'tech', text: 'Hello! I am your assigned technician en route to your site.', time: '10:40 AM' }
+    ];
+  }
+
+  const msgs = chatMessages[currentChatJobId];
+  chatContainer.innerHTML = msgs.map(m => `
+    <div class="bubble ${m.sender === activeUserRole ? 'sent' : 'received'}">
+      <div>${m.text}</div>
+      <div class="chat-time">${m.time}</div>
+    </div>
+  `).join('');
+
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// Private Chat Submit
+document.addEventListener('DOMContentLoaded', () => {
+  const chatForm = document.getElementById('privateChatForm');
+  if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('chatInputMsg');
+      const text = input.value.trim();
+      if (!text || !currentChatJobId) return;
+
+      if (!chatMessages[currentChatJobId]) chatMessages[currentChatJobId] = [];
+
+      chatMessages[currentChatJobId].push({
+        sender: activeUserRole,
+        text: text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+
+      input.value = '';
+      renderPrivateChatMessages();
+    });
+  }
+});
   const ctx = document.getElementById('analyticsChart');
   if (!ctx) return;
   new Chart(ctx.getContext('2d'), {
