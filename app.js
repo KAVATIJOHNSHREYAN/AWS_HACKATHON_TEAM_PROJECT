@@ -216,6 +216,24 @@ function renderRoleDashboards() {
     `).join('');
   }
 
+  // Manage Technicians Table
+  const techMgmtTable = document.getElementById('techManagementTableBody');
+  if (techMgmtTable) {
+    techMgmtTable.innerHTML = technicians.map(t => `
+      <tr>
+        <td><strong>${t.id}</strong></td>
+        <td>${t.name}</td>
+        <td>${t.skill}</td>
+        <td><span class="badge bg-${t.status === 'Available' ? 'success' : (t.status === 'Busy' ? 'warning' : 'danger')}">${t.status}</span></td>
+        <td>${t.latitude}, ${t.longitude}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-info me-1" onclick="openEditTechModal('${t.id}')">Edit</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteTechnician('${t.id}')">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
   // 3. TECHNICIAN DASHBOARD
   const techJobsContainer = document.getElementById('techAssignedJobs');
   if (techJobsContainer) {
@@ -267,8 +285,85 @@ function renderWorkflowStepper(currentStatus) {
   `;
 }
 
+// Open Technician Add / Edit Modals
+function openAddTechModal() {
+  document.getElementById('techModalTitle').textContent = 'Add New Technician';
+  document.getElementById('techForm').reset();
+  document.getElementById('techIdInput').removeAttribute('readonly');
+  new bootstrap.Modal(document.getElementById('techModal')).show();
+}
+
+function openEditTechModal(id) {
+  const tech = technicians.find(t => t.id === id);
+  if (!tech) return;
+
+  document.getElementById('techModalTitle').textContent = 'Update Technician';
+  document.getElementById('techIdInput').value = tech.id;
+  document.getElementById('techIdInput').setAttribute('readonly', 'true');
+  document.getElementById('techNameInput').value = tech.name;
+  document.getElementById('techEmailInput').value = tech.email || '';
+  document.getElementById('techPhoneInput').value = tech.phone || '';
+  document.getElementById('techSkillInput').value = tech.skill;
+  document.getElementById('techStatusInput').value = tech.status;
+  document.getElementById('techLatInput').value = tech.latitude;
+  document.getElementById('techLngInput').value = tech.longitude;
+
+  new bootstrap.Modal(document.getElementById('techModal')).show();
+}
+
+async function deleteTechnician(id) {
+  if (!confirm(`Are you sure you want to delete technician ${id}?`)) return;
+  try {
+    await fetch(`${CONFIG.API_BASE_URL}/${id}`, { method: 'DELETE' });
+  } catch (err) {
+    console.warn('API Gateway offline, updating local state:', err);
+  }
+  technicians = technicians.filter(t => t.id !== id);
+  renderRoleDashboards();
+}
+
 // Form Handlers
 function setupForms() {
+  const techForm = document.getElementById('techForm');
+  if (techForm) {
+    techForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('techIdInput').value;
+      const isEdit = document.getElementById('techIdInput').hasAttribute('readonly');
+
+      const payload = {
+        id: id,
+        name: document.getElementById('techNameInput').value,
+        email: document.getElementById('techEmailInput').value,
+        phone: document.getElementById('techPhoneInput').value,
+        skill: document.getElementById('techSkillInput').value,
+        status: document.getElementById('techStatusInput').value,
+        latitude: parseFloat(document.getElementById('techLatInput').value),
+        longitude: parseFloat(document.getElementById('techLngInput').value)
+      };
+
+      try {
+        await fetch(isEdit ? `${CONFIG.API_BASE_URL}/${id}` : CONFIG.API_BASE_URL, {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.warn('API error, saving locally:', err);
+      }
+
+      if (isEdit) {
+        const idx = technicians.findIndex(t => t.id === id);
+        if (idx !== -1) technicians[idx] = payload;
+      } else {
+        technicians.push(payload);
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('techModal')).hide();
+      renderRoleDashboards();
+      alert(`Technician ${id} ${isEdit ? 'updated' : 'added'} successfully!`);
+    });
+  }
   const reqForm = document.getElementById('createServiceForm');
   if (reqForm) {
     reqForm.addEventListener('submit', (e) => {
