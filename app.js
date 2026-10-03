@@ -43,48 +43,83 @@ function registerServiceWorker() {
   }
 }
 
-// Authentication & Session Guard
+// Role -> dashboard page routing table
+const DASHBOARD_ROUTES = {
+  customer: 'customer-dashboard.html',
+  manager: 'manager-dashboard.html',
+  technician: 'technician-dashboard.html'
+};
+
+// Authentication & Session Guard (works on login page AND dashboard pages)
 function checkExistingSession() {
-  const session = localStorage.getItem('fsm_user_session');
-  if (session) {
-    activeUserSession = JSON.parse(session);
-    activeUserRole = activeUserSession.role;
-    showAppConsole();
-  } else {
+  let session = null;
+  try { session = JSON.parse(localStorage.getItem('fsm_user_session')); } catch (e) { session = null; }
+
+  const isLoginPage = !!document.getElementById('authPortals');
+  const pageRole = document.body.getAttribute('data-role'); // set on dashboard pages
+
+  if (isLoginPage) {
+    // Already logged in -> go straight to the correct dashboard
+    if (session && DASHBOARD_ROUTES[session.role]) {
+      window.location.href = DASHBOARD_ROUTES[session.role];
+      return;
+    }
     showLoginPortal('customer');
+    return;
   }
+
+  // Dashboard page: block unauthenticated access
+  if (!session || !DASHBOARD_ROUTES[session.role]) {
+    window.location.href = 'index.html';
+    return;
+  }
+  // RBAC: a role may only open its own dashboard
+  if (pageRole && session.role !== pageRole) {
+    window.location.href = DASHBOARD_ROUTES[session.role];
+    return;
+  }
+
+  activeUserSession = session;
+  activeUserRole = session.role;
+  const nameEl = document.getElementById('sessionUserName');
+  if (nameEl) nameEl.textContent = session.name || session.email;
+  renderNotifications();
 }
 
 function showLoginPortal(role) {
-  document.getElementById('authPortals').style.display = 'flex';
-  document.getElementById('appConsole').style.display = 'none';
+  const auth = document.getElementById('authPortals');
+  if (!auth) { window.location.href = 'index.html'; return; }
+  auth.style.display = 'flex';
+  const appConsole = document.getElementById('appConsole');
+  if (appConsole) appConsole.style.display = 'none';
 
   document.querySelectorAll('.auth-page').forEach(p => p.style.display = 'none');
-  document.getElementById(`${role}LoginPage`).style.display = 'block';
+  const page = document.getElementById(`${role}LoginPage`);
+  if (page) page.style.display = 'block';
+}
+
+// Bind a submit handler only if the form exists on the current page
+function bindForm(id, handler) {
+  const form = document.getElementById(id);
+  if (!form) return;
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handler(form);
+  });
 }
 
 function setupLoginAuth() {
-  // Customer Login
-  document.getElementById('custLoginForm').addEventListener('submit', (e) => {
-    e.preventDefault();
+  bindForm('custLoginForm', () => {
     loginUser('customer', document.getElementById('custEmail').value, 'Customer User');
   });
-  // Customer Register
-  document.getElementById('custRegisterForm').addEventListener('submit', (e) => {
-    e.preventDefault();
+  bindForm('custRegisterForm', () => {
     alert('Registration successful! Please log in.');
     showLoginPortal('customer');
   });
-
-  // Manager Login
-  document.getElementById('mgrLoginForm').addEventListener('submit', (e) => {
-    e.preventDefault();
+  bindForm('mgrLoginForm', () => {
     loginUser('manager', document.getElementById('mgrEmail').value, 'AWS Operations Manager');
   });
-
-  // Technician Login
-  document.getElementById('techLoginForm').addEventListener('submit', (e) => {
-    e.preventDefault();
+  bindForm('techLoginForm', () => {
     loginUser('technician', document.getElementById('techEmail').value, 'Field Technician');
   });
 }
@@ -95,9 +130,7 @@ function loginUser(role, email, name) {
   localStorage.setItem('fsm_user_session', JSON.stringify(activeUserSession));
   
   // Standalone Dashboard Redirection
-  if (role === 'customer') window.location.href = 'customer-dashboard.html';
-  else if (role === 'manager') window.location.href = 'manager-dashboard.html';
-  else if (role === 'technician') window.location.href = 'technician-dashboard.html';
+  window.location.href = DASHBOARD_ROUTES[role] || 'index.html';
 }
 
 function logoutUser() {
@@ -134,18 +167,21 @@ function showAppConsole() {
 
 // Page Navigation
 function setupNavigation() {
-  document.querySelectorAll('.nav-item').forEach(item => {
+  // Only bind items that declare data-page (dashboard pages use inline onclick)
+  document.querySelectorAll('.nav-item[data-page]').forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
-      const pageId = item.getAttribute('data-page');
-      switchPage(pageId);
+      switchPage(item.getAttribute('data-page'));
     });
   });
 }
 
 function switchPage(pageId) {
+  if (!pageId || !document.getElementById(pageId)) return; // never blank the page
+
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const activeNav = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+  const activeNav = document.querySelector(`.nav-item[data-page="${pageId}"]`) ||
+                    document.querySelector(`.nav-item[onclick*="'${pageId}'"]`);
   if (activeNav) activeNav.classList.add('active');
 
   document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
@@ -202,9 +238,10 @@ function renderRoleDashboards() {
   }
 
   // 2. MANAGER DASHBOARD
-  document.getElementById('mgrTotalReq').textContent = serviceJobs.length;
-  document.getElementById('mgrPendingReq').textContent = serviceJobs.filter(j => j.status === 'Requested').length;
-  document.getElementById('mgrActiveTechs').textContent = technicians.filter(t => t.status === 'Available' || t.status === 'Busy').length;
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('mgrTotalReq', serviceJobs.length);
+  setText('mgrPendingReq', serviceJobs.filter(j => j.status === 'Requested').length);
+  setText('mgrActiveTechs', technicians.filter(t => t.status === 'Available' || t.status === 'Busy').length);
 
   const mgrJobsTable = document.getElementById('mgrJobsTableBody');
   if (mgrJobsTable) {
@@ -717,6 +754,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderPrivateChatMessages();
     });
   }
+});
+
 // Analytics Chart
 function renderAnalyticsChart() {
   const ctx = document.getElementById('analyticsChart');
