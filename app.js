@@ -341,7 +341,9 @@ function renderNotifications() {
   }
 }
 
-// Live Map Leaflet Renderer
+// Live Map Leaflet Renderer with Route Simulator
+let simulationInterval = null;
+
 async function initLiveMap() {
   await fetchTechnicians();
   if (!mapInstance) {
@@ -360,8 +362,8 @@ async function initLiveMap() {
     let color = t.status === 'Available' ? '#10b981' : (t.status === 'Busy' ? '#f59e0b' : '#ef4444');
     const customIcon = L.divIcon({
       className: 'custom-marker',
-      html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 10px ${color};"></div>`,
-      iconSize: [22, 22]
+      html: `<div id="marker-${t.id}" style="background-color: ${color}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 12px ${color}; transition: all 0.5s linear;"></div>`,
+      iconSize: [24, 24]
     });
 
     const marker = L.marker([t.latitude, t.longitude], { icon: customIcon }).addTo(mapInstance);
@@ -372,8 +374,64 @@ async function initLiveMap() {
         Status: <strong style="color:${color};">${t.status}</strong>
       </div>
     `);
-    mapMarkers.push(marker);
+    mapMarkers.push({ id: t.id, marker: marker });
   });
+}
+
+// Live Route & Movement Simulator for Hackathon Presentation
+function startMovementSimulation() {
+  if (simulationInterval) {
+    clearInterval(simulationInterval);
+    simulationInterval = null;
+    alert('Route Simulation Paused.');
+    return;
+  }
+
+  // Find active job travelling to customer
+  const targetJob = serviceJobs.find(j => j.status === 'Travelling' || j.status === 'Assigned') || serviceJobs[0];
+  const techId = targetJob.technicianId || 'TECH-104';
+  const techObj = technicians.find(t => t.id === techId) || technicians[0];
+  const techMarkerObj = mapMarkers.find(m => m.id === techObj.id);
+
+  if (!techMarkerObj) {
+    alert('Please initialize Live Map first!');
+    return;
+  }
+
+  alert(`Starting Live Route Simulation for ${techObj.name} navigating towards ${targetJob.customerName} (${targetJob.lat}, ${targetJob.lng})`);
+
+  let currentLat = techObj.latitude;
+  let currentLng = techObj.longitude;
+  const destLat = targetJob.lat;
+  const destLng = targetJob.lng;
+
+  const steps = 20;
+  let stepCount = 0;
+
+  const dLat = (destLat - currentLat) / steps;
+  const dLng = (destLng - currentLng) / steps;
+
+  simulationInterval = setInterval(() => {
+    stepCount++;
+    currentLat += dLat;
+    currentLng += dLng;
+
+    // Update Marker Position
+    techMarkerObj.marker.setLatLng([currentLat, currentLng]);
+    mapInstance.panTo([currentLat, currentLng]);
+
+    // Check Geofence Proximity (within ~500m)
+    const distKm = calculateHaversineDistance(currentLat, currentLng, destLat, destLng);
+    if (distKm < 0.5 || stepCount >= steps) {
+      clearInterval(simulationInterval);
+      simulationInterval = null;
+      techObj.latitude = destLat;
+      techObj.longitude = destLng;
+      updateJobStage(targetJob.id, 'Arrived');
+      addNotification('Geofence Alert', `Technician ${techObj.name} entered customer geofence area for ${targetJob.customerName}!`, 'all');
+      alert(`🎯 GEOFENCE TRIGGER: Technician ${techObj.name} has ARRIVED at customer location!`);
+    }
+  }, 1000);
 }
 
 // Bedrock AI Query Handler

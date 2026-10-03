@@ -336,8 +336,12 @@
       <section id="liveMap" class="page-view">
         <div class="glass-panel p-3">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0">Amazon Location Service Live Tracking</h4>
-            <div class="d-flex gap-2">
+            <div>
+              <h4 class="mb-0">Amazon Location Service Live Tracking</h4>
+              <small class="text-muted">Real-time GPS Device Movement & Geofencing</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-sm btn-aws" onclick="startMovementSimulation()"><i class="ri-play-circle-line"></i> Simulate Live Route</button>
               <span class="badge bg-success">🟢 Available</span>
               <span class="badge bg-warning text-dark">🟠 Busy</span>
               <span class="badge bg-danger">🔴 Offline</span>
