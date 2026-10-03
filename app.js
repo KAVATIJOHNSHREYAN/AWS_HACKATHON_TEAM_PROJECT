@@ -93,14 +93,18 @@ function loginUser(role, email, name) {
   activeUserRole = role;
   activeUserSession = { role, email, name, loggedInAt: new Date().toISOString() };
   localStorage.setItem('fsm_user_session', JSON.stringify(activeUserSession));
-  showAppConsole();
+  
+  // Standalone Dashboard Redirection
+  if (role === 'customer') window.location.href = 'customer-dashboard.html';
+  else if (role === 'manager') window.location.href = 'manager-dashboard.html';
+  else if (role === 'technician') window.location.href = 'technician-dashboard.html';
 }
 
 function logoutUser() {
   localStorage.removeItem('fsm_user_session');
   activeUserRole = null;
   activeUserSession = null;
-  showLoginPortal('customer');
+  window.location.href = 'index.html';
 }
 
 function showAppConsole() {
