@@ -713,7 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderPrivateChatMessages();
     });
   }
-});
+// Analytics Chart
+function renderAnalyticsChart() {
   const ctx = document.getElementById('analyticsChart');
   if (!ctx) return;
   new Chart(ctx.getContext('2d'), {
