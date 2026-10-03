@@ -31,7 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupForms();
   checkExistingSession();
+  registerServiceWorker();
 });
+
+// Register Service Worker for Offline PWA Support
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then((reg) => console.log('[PWA] Service Worker registered with scope:', reg.scope))
+      .catch((err) => console.warn('[PWA] Service Worker registration failed:', err));
+  }
+}
 
 // Authentication & Session Guard
 function checkExistingSession() {

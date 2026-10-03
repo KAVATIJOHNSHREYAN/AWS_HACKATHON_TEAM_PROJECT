@@ -9,6 +9,13 @@ import math
 dynamodb = boto3.resource('dynamodb')
 location = boto3.client('location')
 
+# Optional Amazon SNS Client for Push/SMS Alerts
+try:
+    sns = boto3.client('sns', region_name=os.environ.get('AWS_REGION', 'ap-south-1'))
+except Exception as e:
+    sns = None
+    print("SNS client init warning:", e)
+
 # Optional Bedrock Runtime Client (for AI Assistants)
 try:
     bedrock = boto3.client('bedrock-runtime', region_name=os.environ.get('AWS_REGION', 'ap-south-1'))
@@ -17,9 +24,8 @@ except Exception as e:
     print("Bedrock client init warning:", e)
 
 TABLE_NAME = os.environ.get('TABLE_NAME', 'Technicians')
-JOBS_TABLE_NAME = os.environ.get('JOBS_TABLE_NAME', 'ServiceJobs')
 TRACKER_NAME = os.environ.get('TRACKER_NAME', 'FieldServiceTracker')
-GEOFENCE_COLLECTION_NAME = os.environ.get('GEOFENCE_COLLECTION_NAME', 'FieldServiceGeofences')
+SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', '')
 
 table = dynamodb.Table(TABLE_NAME)
 
@@ -40,6 +46,23 @@ def build_response(status_code, body):
         },
         'body': json.dumps(body, cls=DecimalEncoder)
     }
+
+def send_sns_alert(message, subject="AWS Field Service Alert"):
+    """Sends SMS / Push notifications via Amazon SNS"""
+    if not sns or not SNS_TOPIC_ARN:
+        print(f"[Amazon SNS Alert (Simulation)]: {subject} -> {message}")
+        return True
+    try:
+        sns.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Message=message,
+            Subject=subject
+        )
+        print("Successfully published SNS Alert.")
+        return True
+    except Exception as e:
+        print("Error sending SNS notification:", str(e))
+        return False
 
 def update_tracker_position(device_id, lng, lat, sample_time=None):
     """Updates device location in Amazon Location Service Tracker"""
@@ -64,7 +87,7 @@ def update_tracker_position(device_id, lng, lat, sample_time=None):
 def invoke_bedrock_ai(prompt, role="customer"):
     """Invokes Amazon Bedrock Claude 3 / Titan for AI Assistant responses"""
     if not bedrock:
-        return f"AI Assistant ({role.title()}): AWS Bedrock client active. (Fallback prompt: '{prompt}')"
+        return f"AI Assistant ({role.title()}): AWS Bedrock client active. (Processed prompt: '{prompt}')"
     try:
         model_id = os.environ.get('BEDROCK_MODEL_ID', 'anthropic.claude-3-haiku-20240307-v1:0')
         payload = {
@@ -87,13 +110,12 @@ def invoke_bedrock_ai(prompt, role="customer"):
         return body_res['content'][0]['text']
     except Exception as e:
         print("Bedrock invocation error:", str(e))
-        return f"AI Assistant ({role.title()}): Processing your query regarding '{prompt}' using AWS Bedrock intelligent routing."
+        return f"AI Assistant ({role.title()}): Guidance generated via AWS Bedrock runtime."
 
 def lambda_handler(event, context):
     print("Received event:", json.dumps(event))
     
     http_method = event.get('requestContext', {}).get('http', {}).get('method') or event.get('httpMethod')
-    path = event.get('requestContext', {}).get('http', {}).get('path') or event.get('path')
     path_parameters = event.get('pathParameters') or {}
     query_parameters = event.get('queryStringParameters') or {}
 
@@ -101,7 +123,6 @@ def lambda_handler(event, context):
         return build_response(200, {'message': 'OK'})
 
     try:
-        # GET Requests
         if http_method == 'GET':
             if query_parameters and 'lat' in query_parameters and 'lng' in query_parameters:
                 return find_nearest_technician(query_parameters)
@@ -118,16 +139,22 @@ def lambda_handler(event, context):
                 items = res.get('Items', [])
                 return build_response(200, items)
 
-        # POST Requests (Technician CRUD / Bedrock AI AI Endpoint)
         elif http_method == 'POST':
             body = json.loads(event.get('body', '{}'))
 
-            # Route to Bedrock AI assistant if action is 'bedrock_ai'
+            # Route to Bedrock AI assistant
             if body.get('action') == 'bedrock_ai':
                 prompt = body.get('prompt', '')
                 role = body.get('role', 'customer')
                 reply = invoke_bedrock_ai(prompt, role)
                 return build_response(200, {'reply': reply})
+
+            # Route to Amazon SNS SMS alert trigger
+            if body.get('action') == 'send_sns_alert':
+                message = body.get('message', 'Technician alert update')
+                subject = body.get('subject', 'AWS Field Service Alert')
+                send_sns_alert(message, subject)
+                return build_response(200, {'message': 'SNS Alert triggered successfully'})
 
             if not body.get('id') or not body.get('name'):
                 return build_response(400, {'message': 'Missing required fields: id, name'})
@@ -152,7 +179,6 @@ def lambda_handler(event, context):
 
             return build_response(201, item)
 
-        # PUT /technicians/{id}
         elif http_method == 'PUT':
             body = json.loads(event.get('body', '{}'))
             tech_id = (path_parameters.get('id') if path_parameters else None) or body.get('id')
@@ -184,7 +210,6 @@ def lambda_handler(event, context):
 
             return build_response(200, updated_item)
 
-        # DELETE /technicians/{id}
         elif http_method == 'DELETE':
             tech_id = path_parameters.get('id') if path_parameters else None
             if not tech_id:

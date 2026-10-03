@@ -1,0 +1,21 @@
+{
+  "name": "Amazon Field Service PWA",
+  "short_name": "AWS FSM",
+  "description": "Progressive Web App for Field Technicians with Offline Support",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#ff9900",
+  "icons": [
+    {
+      "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f6e0.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f6e0.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
