@@ -23,6 +23,7 @@
   top: -100px;
   left: -100px;
   animation: floatOrb 8s infinite alternate ease-in-out;
+  pointer-events: none;
 }
 
 @keyframes floatOrb {
