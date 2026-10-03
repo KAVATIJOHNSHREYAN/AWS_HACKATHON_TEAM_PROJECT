@@ -6,10 +6,10 @@
 // Global Config - Update API Gateway Endpoint URL
 const CONFIG = {
   // Replace with your API Gateway Stage URL if different
-  API_BASE_URL: 'https://YOUR_API_GATEWAY_ID.execute-api.us-east-1.amazonaws.com/prod/technicians',
+  API_BASE_URL: 'https://YOUR_API_GATEWAY_ID.execute-api.ap-south-1.amazonaws.com/prod/technicians',
   MAP_NAME: 'FieldServiceMap',
-  REGION: 'us-east-1',
-  GEOFENCE_CENTER: { lat: 37.7749, lng: -122.4194 }, // Center of service area
+  REGION: 'ap-south-1',
+  GEOFENCE_CENTER: { lat: 19.0760, lng: 72.8777 }, // Center of service area (Mumbai)
   GEOFENCE_RADIUS_KM: 25.0 // Maximum allowable radius before warning alert
 };
 
@@ -101,13 +101,13 @@ async function fetchTechnicians() {
     return technicians;
   } catch (error) {
     console.warn('API Gateway error, using cached/mock fallback for demonstration:', error);
-    // Demo Fallback Data if API URL is not updated yet
+    // Demo Fallback Data in Mumbai Region
     if (technicians.length === 0) {
       technicians = [
-        { id: 'TECH-101', name: 'Alex Rivera', skill: 'HVAC Specialist', status: 'Available', latitude: 37.7749, longitude: -122.4194, email: 'alex@example.com', phone: '555-0192', lastUpdated: new Date().toISOString() },
-        { id: 'TECH-102', name: 'Sarah Chen', skill: 'Electrical Engineer', status: 'Busy', latitude: 37.7833, longitude: -122.4167, email: 'sarah@example.com', phone: '555-0144', lastUpdated: new Date().toISOString() },
-        { id: 'TECH-103', name: 'Marcus Vance', skill: 'Plumbing & Pipefitting', status: 'Offline', latitude: 37.7300, longitude: -122.3800, email: 'marcus@example.com', phone: '555-0188', lastUpdated: new Date().toISOString() },
-        { id: 'TECH-104', name: 'Elena Rostova', skill: 'Network Systems', status: 'Available', latitude: 37.7900, longitude: -122.4000, email: 'elena@example.com', phone: '555-0199', lastUpdated: new Date().toISOString() }
+        { id: 'TECH-101', name: 'Aarav Sharma', skill: 'HVAC Specialist', status: 'Available', latitude: 19.0760, longitude: 72.8777, email: 'aarav@example.com', phone: '9820011223', lastUpdated: new Date().toISOString() },
+        { id: 'TECH-102', name: 'Priya Patel', skill: 'Electrical Engineer', status: 'Busy', latitude: 19.1197, longitude: 72.9050, email: 'priya@example.com', phone: '9820044556', lastUpdated: new Date().toISOString() },
+        { id: 'TECH-103', name: 'Rohan Mehta', skill: 'Plumbing & Pipefitting', status: 'Offline', latitude: 18.9220, longitude: 72.8347, email: 'rohan@example.com', phone: '9820077889', lastUpdated: new Date().toISOString() },
+        { id: 'TECH-104', name: 'Ananya Iyer', skill: 'Network Systems', status: 'Available', latitude: 19.0596, longitude: 72.8295, email: 'ananya@example.com', phone: '9820099001', lastUpdated: new Date().toISOString() }
       ];
     }
     return technicians;
@@ -331,7 +331,7 @@ async function initLiveMap() {
   await fetchTechnicians();
   
   if (!mapInstance) {
-    mapInstance = L.map('mapContainer').setView([37.7749, -122.4194], 12);
+    mapInstance = L.map('mapContainer').setView([19.0760, 72.8777], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© MapLibre / OpenStreetMap / Amazon Location Service'
