@@ -14,31 +14,36 @@ flowchart TD
     D --> E[Customer Login]
     B -- Yes --> E
     
-    E --> F[Customer Dashboard]
-    F --> G[Create Service Request]
+    E --> F[Redirect to customer-dashboard.html]
+    F --> G[Create New Service Request]
     
     G --> H[Fill Request Details:
     - Service Category
     - Issue Description
     - Site Address & GPS Lat/Lng
     - Preferred Visit Time
-    - Contact Details
-    - Optional Image Attachment]
+    - Special Instructions]
     
     H --> I[Submit Request to API Gateway]
     I --> J[Request Status: REQUESTED]
     J --> K[Real-Time Dispatch Notification to Manager]
     
-    F --> L[Track Active Job & Live Location]
-    L --> M[View Assigned Technician & Live Map Tracker]
-    L --> N[In-App Customer-Technician Chat]
-    L --> O[Query Amazon Bedrock AI Customer Assistant]
+    F --> L[Track Active Service Requests]
+    L --> M[Visual Workflow Stepper: REQUESTED -> ASSIGNED -> ACCEPTED -> TRAVELLING -> ARRIVED -> WORKING -> COMPLETED]
     
-    M --> P{Job Completed?}
-    P -- No --> L
-    P -- Yes --> Q[Receive Job Completion Alert]
-    Q --> R[Submit Star Rating & Customer Feedback]
-    R --> S[Service History Archived]
+    L --> N{Select Table Action}
+    N -- View --> O[Open Technician Detail Modal: Profile, Rating, Experience, ETA, Remarks]
+    N -- Chat --> P[Open In-App Live Chat Drawer with Technician]
+    N -- Call --> Q[Trigger Direct Quick-Dial Call]
+    
+    L --> R[Live Location Map Tracker with Animated Radar]
+    L --> S[Query Amazon Bedrock AI Customer Assistant]
+    
+    R --> T{Job Status == COMPLETED?}
+    T -- No --> L
+    T -- Yes --> U[Receive Completion Notification]
+    U --> V[Submit Star Rating & Service Review]
+    V --> W[Service Record Archived]
 ```
 
 ---
@@ -47,27 +52,28 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Start: Manager Login] --> B[Manager Master Console]
-    B --> C[View Key Performance Metrics & Analytics]
+    A[Start: Manager Login] --> B[Redirect to manager-dashboard.html]
+    B --> C[View Operational Metrics & Analytics Charts]
     B --> D[Monitor Master Service Request Queue]
     
     D --> E{Filter Job Status}
-    E -- Pending Requests --> F[Select Unassigned Job]
-    E -- Active Jobs --> G[Monitor Live Technician Map & Geofence Breaches]
+    E -- Requested / Unassigned --> F[Click 'Assign' Action Button]
+    E -- Active Jobs --> G[Monitor Live Technician Device Map & Radar]
     
-    F --> H[Review Customer Issue Details & GPS Coordinates]
-    H --> I[Check Technician Skill & Availability Matrix]
-    I --> J[Select Optimal Technician & Set Job Priority]
-    J --> K[Assign / Reassign Technician via API]
+    F --> H[Open Dispatch Modal]
+    H --> I[Review Issue Details & GPS Site Coordinates]
+    I --> J[Select Qualified Technician from Available List]
+    J --> K[Confirm Assignment via API Gateway]
     
-    K --> L[Trigger Real-Time Assignment Notification to Tech]
+    K --> L[Update Job Status: ASSIGNED]
+    L --> M[Trigger Instant Push Notification to Technician]
     
-    G --> M[Track Device Position via Amazon Location Tracker]
-    G --> N[Send In-App Manager Instructions to Tech]
-    G --> O[Consult Amazon Bedrock Manager AI for Dispatch Recommendations]
+    G --> N[Track Real-Time Device Position via Amazon Location Tracker]
+    G --> O[Monitor Geofence Breaches & Site Arrival]
+    G --> P[Consult Amazon Bedrock Manager AI for Smart Dispatch Advice]
     
-    P[Technician Marks Work Completed] --> Q[Receive Automated Completion Notification]
-    Q --> R[Archive Job Record & Update Business Performance Metrics]
+    Q[Technician Completes Work] --> R[Automated Manager Status Update: COMPLETED]
+    R --> S[Update Fleet Performance Analytics]
 ```
 
 ---
@@ -76,29 +82,29 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Start: Technician Login] --> B[Technician Dedicated Dashboard]
+    A[Start: Technician Login] --> B[Redirect to technician-dashboard.html]
     B --> C[View Assigned Jobs Workspace]
     
-    C --> D[Select New Assignment]
+    C --> D[Select New Dispatch Assignment]
     D --> E{Accept or Reject Job?}
-    E -- Reject --> F[Notify Manager & Reset Status to REQUESTED]
-    E -- Accept --> G[Update Job Status: ACCEPTED]
+    E -- Reject --> F[Notify Manager & Revert Status to REQUESTED]
+    E -- Accept --> G[Update Status: ACCEPTED]
     
     G --> H[Click 'Start Journey']
-    H --> I[Update Job Status: TRAVELLING]
-    I --> J[Stream GPS Device Coordinates to Amazon Location Tracker]
+    H --> I[Update Status: TRAVELLING]
+    I --> J[Stream Device Coordinates to Amazon Location Tracker]
     
-    J --> K[Navigate to Customer Site using Amazon Location Route]
-    K --> L{Reached Customer Site?}
+    J --> K[Navigate to Customer Site using Amazon Location Routing]
+    K --> L{Site Arrival}
     
-    L -- Yes / Geofence Detection --> M[Auto / Manual Status Update: ARRIVED]
+    L -- Arrived at Site --> M[Click 'Mark Arrived' -> Status: ARRIVED]
     M --> N[Click 'Start Work' -> Status: WORKING]
     
-    N --> O[Consult Amazon Bedrock Technician Assistant for Safety & Repair Steps]
-    N --> P[In-App Chat with Customer & Manager]
+    N --> O[Consult Amazon Bedrock Technician AI for Repair & Safety Advice]
+    N --> P[In-App Chat with Customer]
     
-    N --> Q[Complete Repair Work]
-    Q --> R[Click 'Complete Work' -> Status: COMPLETED]
+    N --> Q[Complete Maintenance & Repair Work]
+    Q --> R[Click 'Complete Job' -> Status: COMPLETED]
     R --> S[Notify Customer & Manager Instantly]
 ```
 
@@ -117,13 +123,14 @@ sequenceDiagram
 
     Customer->>API: 1. Create Service Request (GPS, Issue)
     API-->>Manager: 2. Real-time Request Notification
-    Manager->>API: 3. Assign Technician
+    Manager->>API: 3. Assign Technician to Request
     API-->>Tech: 4. Assignment Push Notification
     Tech->>API: 5. Accept Job & Start Journey
-    Tech->>Loc: 6. Stream Live GPS Device Position
-    Loc-->>Customer: 7. Live Map Tracking View
-    Loc->>Loc: 8. Detect Geofence Entrance (Arrived)
-    Tech->>API: 9. Start Repair & Mark Completed
-    API-->>Customer: 10. Completion Notification
-    Customer->>API: 11. Submit Star Rating & Review
+    Tech->>Loc: 6. Stream Live Device Location
+    Loc-->>Customer: 7. Live Map Radar Tracking View
+    Customer->>Tech: 8. In-App Chat / View Details / Call
+    Tech->>Loc: 9. Arrive at Customer Site & Start Work
+    Tech->>API: 10. Mark Job as Completed
+    API-->>Customer: 11. Completion Notification
+    Customer->>API: 12. Submit Star Rating & Review
 ```
