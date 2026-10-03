@@ -338,6 +338,13 @@ async function initLiveMap() {
     }).addTo(mapInstance);
   }
 
+  // Force Leaflet to recalculate container size when tab becomes visible
+  setTimeout(() => {
+    if (mapInstance) {
+      mapInstance.invalidateSize();
+    }
+  }, 200);
+
   // Clear existing markers
   mapMarkers.forEach(m => mapInstance.removeLayer(m));
   mapMarkers = [];
