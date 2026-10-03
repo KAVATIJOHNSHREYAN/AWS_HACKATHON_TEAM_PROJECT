@@ -1,0 +1,27 @@
+/* Enterprise Table Styling */
+.table-responsive {
+  overflow-x: auto;
+  border-radius: 14px;
+}
+
+.table-dark {
+  --bs-table-bg: transparent;
+  --bs-table-hover-bg: rgba(51, 65, 85, 0.5);
+  margin-bottom: 0;
+}
+
+.table-dark th {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-glass);
+  padding: 14px 18px;
+}
+
+.table-dark td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-glass);
+  font-size: 0.9rem;
+}

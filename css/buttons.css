@@ -1,0 +1,21 @@
+/* Custom Button Components */
+.btn-aws {
+  background: linear-gradient(135deg, #FF9900, #E68A00);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(255, 153, 0, 0.35);
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.btn-aws:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 153, 0, 0.5);
+  color: #fff;
+}

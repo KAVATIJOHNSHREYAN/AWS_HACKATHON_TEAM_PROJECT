@@ -1,0 +1,37 @@
+/* Enterprise AWS Design Tokens & Custom Properties */
+:root {
+  /* Color Palette */
+  --color-primary: #0F172A;
+  --color-secondary: #1E293B;
+  --color-accent-blue: #2563EB;
+  --color-accent-cyan: #06B6D4;
+  --color-accent-green: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-success: #10B981;
+  --color-text-main: #F8FAFC;
+  --color-text-muted: #94A3B8;
+
+  /* Glassmorphism & Borders */
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-hover: rgba(6, 182, 212, 0.4);
+  --card-bg: rgba(30, 41, 59, 0.65);
+  --card-bg-hover: rgba(51, 65, 85, 0.85);
+
+  /* Gradients */
+  --bg-gradient: linear-gradient(135deg, #020617 0%, #0F172A 50%, #1E293B 100%);
+  --gradient-blue: linear-gradient(135deg, #2563EB, #06B6D4);
+  --gradient-orange: linear-gradient(135deg, #FF9900, #F59E0B);
+  --gradient-purple: linear-gradient(135deg, #8B5CF6, #EC4899);
+
+  /* Structure */
+  --sidebar-width: 270px;
+  --header-height: 70px;
+  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Shadows */
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --neon-glow-blue: 0 0 20px rgba(37, 99, 235, 0.4);
+  --neon-glow-orange: 0 0 20px rgba(255, 153, 0, 0.4);
+}

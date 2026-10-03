@@ -1,0 +1,59 @@
+/* Dashboard Layout & Metrics Styling */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.dashboard-split {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+/* Dynamic 7-Stage Workflow Progress Stepper */
+.workflow-stepper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  margin: 16px 0;
+  padding: 0 8px;
+}
+
+.workflow-stepper::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  z-index: 1;
+}
+
+.step-item {
+  position: relative;
+  z-index: 2;
+  background: #0f172a;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-glass);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.step-item.active {
+  background: #FF9900;
+  color: #fff;
+  border-color: #FF9900;
+  box-shadow: 0 0 12px rgba(255, 153, 0, 0.6);
+}
+
+.step-item.completed {
+  background: #0073BB;
+  color: #fff;
+  border-color: #0073BB;
+}

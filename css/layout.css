@@ -1,0 +1,32 @@
+/* Application Layout & Main Grid */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-wrapper {
+  margin-left: var(--sidebar-width);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.content-area {
+  padding: 32px;
+  flex: 1;
+}
+
+.page-view {
+  display: none;
+  animation: pageFadeIn 0.35s ease-out;
+}
+
+.page-view.active {
+  display: block;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
