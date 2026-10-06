@@ -42,7 +42,7 @@ Detailed Mermaid flowcharts for all three roles can be found in [FLOWCHARTS.md](
 - Customer Request, Actions & Tracking Flowchart
 - Manager Review & Dispatch Flowchart
 - Technician Journey & Completion Flowchart
-- Integrated System Lifecycle Sequence Diagram
+- Integrated System Lifecycle Sequence 
 
 ---
 
